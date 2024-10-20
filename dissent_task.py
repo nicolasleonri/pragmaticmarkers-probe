@@ -7,14 +7,28 @@ import numpy as np
 import os
 import argparse
 from util.argparse import str2bool
+import re
 
-def load_layer_embeddings(encoder, lang_type, lang, num_layers=13):
+def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type="Total"):
     lang_type = "multilingual" if lang_type else "monolingual"
     layer_embeddings = []
-    for layer in range(num_layers):
-        emb_file_path = f"{encoder}/{lang_type}/{lang}/{lang}_{layer}.npy"
+
+    if type=="Total":
+        for layer in range(int(num_layers)):
+            emb_file_path = f"{encoder}/{lang_type}/{lang}/{lang}_{layer}.npy"
+            print("Embedding from", emb_file_path)
+            layer_embeddings.append(np.load(emb_file_path))
+    elif type=="First":
+        emb_file_path = f"{encoder}/{lang_type}/{lang}/aggr_first_k/{lang}_aggr_{num_layers}.npy"
         print("Embedding from", emb_file_path)
         layer_embeddings.append(np.load(emb_file_path))
+    elif type=="Last":
+        emb_file_path = f"{encoder}/{lang_type}/{lang}/aggr_last_k/{lang}_aggr_{num_layers}.npy"
+        print("Embedding from", emb_file_path)
+        layer_embeddings.append(np.load(emb_file_path))
+    else:
+        raise ImportError("No such file")
+    
     return layer_embeddings
 
 # Argument parsing
@@ -22,6 +36,9 @@ def parse_arguments():
   parser = argparse.ArgumentParser()
   parser.add_argument("-lang", "--language", type=str, required=True)  # Language (e.g., EN, DE, FI)
   parser.add_argument("-multiling", "--use_multiling_enc", type=str2bool, required=True)  # Use multilingual BERT
+  parser.add_argument("-encoder", "--context_encoder", type=str, required=True)  # Select which encoder to use
+  parser.add_argument("-tlayer", "--type_of_layer", type=str, required=False)  # Select how to average layers
+  parser.add_argument("-ilayer", "--index_of_layer", type=str, required=False)  # Select which indeces to average
   return parser.parse_args()
 
 # Load the vocabulary from a .vocab file
@@ -41,11 +58,14 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id):
     for word in words:
         if word in vocab2id:
             token_id = vocab2id[word]  # Get the token id from the vocabulary
+            # HERE: Try different subword tokens
+
             embeddings = [layer[token_id] for layer in layer_embeddings]
             avg_embedding = np.mean(embeddings, axis=0)
             sentence_embeddings.append(avg_embedding)
         else:
             print(f"Word '{word}' not found in vocabulary.")
+            continue
 
     if sentence_embeddings:
         return np.mean(sentence_embeddings, axis=0)
@@ -64,15 +84,29 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
             similarities[marker] = similarity
         else:
             print(f"Marker '{marker}' could not be embedded.")
+            continue
 
     # Select the marker with the highest similarity score
     best_marker = max(similarities, key=similarities.get)
 
     return best_marker
 
+def normalize(sentence):
+    sentence = sentence.lower()
+    # sentence = sentence1.replace(" .", "")
+    sentence= re.sub(r"[^a-zA-Z0-9 ]+", '', sentence) # Remove special characters
+    return sentence
+
 # Main function
 if __name__ == "__main__":
     args = parse_arguments()
+
+    if args.subword_encoder == "AOC":
+        encoder = c.AOC_DIR
+    elif args.subword_encoder == "ISO":
+        encoder = c.ISO_DIR
+    else:
+        raise ImportError("Encoder is missing")
 
     data_dir = "./data/dissent/"
     tsv_files = [f for f in os.listdir(data_dir) if f.endswith('.tsv')]
@@ -88,15 +122,25 @@ if __name__ == "__main__":
                 parts = line.strip().split("\t")  # Split by slash
                 
                 if len(parts) == 3:
-                    sentence1 = parts[0].strip()
+                    sentence1 = parts[0].strip() #Remove special tokens (normalization)
+                    sentence1 = normalize(sentence1)
+                    
                     sentence2 = parts[1].strip()
+                    sentence2 = normalize(sentence2)
+
                     discourse_marker = parts[2].strip()
                     
                     sentence_pairs.append((sentence1, sentence2, discourse_marker))
                     unique_discourse_markers.add(discourse_marker)
 
-    vocab, vocab2id = load_vocab(c.AOC_DIR, args.use_multiling_enc, args.language)
-    layer_embeddings = load_layer_embeddings(c.AOC_DIR, args.use_multiling_enc, args.language)
+    vocab, vocab2id = load_vocab(encoder, args.use_multiling_enc, args.language)
+    if args.type_of_layer and args.index_of_layer:
+        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer, args.type_of_layer, )
+    elif args.index_of_layer:
+        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer)
+    else:
+        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language)
+
 
     # Initialize prediction tracking
     correct_predictions = 0
@@ -126,5 +170,10 @@ if __name__ == "__main__":
     zero_one_loss = total_predictions - correct_predictions 
     accuracy = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0  # Accuracy calculation
 
-    print(f"Total Predictions: {total_predictions}, Correct Predictions: {correct_predictions}, Accuracy: {accuracy:.2f}% \n Zero-One Loss: {zero_one_loss}, Not embedded sentences: {not_embedded_sentences}")
+    print(f"Total Predictions: {total_predictions}, Correct Predictions: {correct_predictions}, Accuracy: {accuracy:.2f}%")
+    print(f"Zero-One Loss: {zero_one_loss}, Not embedded sentences: {not_embedded_sentences}")
         
+#TODO:
+#1) Subword tokenization (with args parsing)
+#2) Take care of proper saving of results (in csv)
+#3) Look for another test
