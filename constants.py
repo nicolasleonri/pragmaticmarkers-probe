@@ -24,3 +24,4 @@ AOC_ISO_DIR = "./iso-aoc"
 
 # place where corpora are placed
 AOC_DOC_DIR = "./corpora/"
+RESULTS = "./results/"
