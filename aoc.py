@@ -66,14 +66,18 @@ def create_term_index(raw_corpus, vocab_set, context_size):
   buffer = 10
   max_elems = context_size + buffer if context_size > 0 else int(1e10)  # int(1e10) = Inf
 
+  # Special tokens (CLS and SEP)
+  cls_token = tokenizer.cls_token
+  sep_token = tokenizer.sep_token
+
   for did, sent in tqdm.tqdm(enumerate(raw_corpus), total=len(raw_corpus)):
-    sent_tokens = sent.split()
+    sent_tokens = [cls_token] + sent.split() + [sep_token]  # Insert CLS at the beginning and SEP at the end    sent_set = set(sent_tokens)
     sent_set = set(sent_tokens)
     words_positions = []
 
     for word in sent_set:
-      if word not in vocab_set:  # skip if we have a non-zero target vocabulary and word is not contained
-        continue
+      if word not in vocab_set and word not in {cls_token, sep_token}:
+        continue  # skip if word is not in vocab or special tokens        continue
 
       position = sent_tokens.index(word)
       word_wordposition = (word, position)
