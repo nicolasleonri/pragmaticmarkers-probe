@@ -1,14 +1,12 @@
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.decomposition import PCA
 from constants import lang2model
 from transformers import BertTokenizer
 import constants as c
 import numpy as np
-import os
 import argparse
 from util.argparse import str2bool
 from util.preprocessing import * 
-import pandas as pd 
+from util.probing import *
 
 # Argument parsing
 def parse_arguments():
@@ -21,33 +19,24 @@ def parse_arguments():
   parser.add_argument("-ilayer", "--index_of_layer", type=str, required=False)  # Select which indeces to average
   return parser.parse_args()
 
-# Load the vocabulary from a .vocab file
-def load_vocab(encoder, lang_type, lang):
-    lang_type = "multilingual" if lang_type else "monolingual"
-    vocab_file_path = f"{encoder}/{lang_type}/{lang}/{lang}.vocab"
-    with open(vocab_file_path, 'r') as f:
-        vocab = [line.strip() for line in f]  # Read and strip each line
-    vocab2id = {term: i for i, term in enumerate(vocab)}  # Create mapping from term to index
-    return vocab, vocab2id
-
 # Function to get the embedding for a sentence
 def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
     sentence_embeddings = []
+
+    sentence = normalize(sentence)
 
     if type_tokens == "NoSpec":
         words = sentence.split()
     elif type_tokens == "All":
         tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
-        tokenized_sentence = tokenizer.encode(sentence)
-        sentence = tokenizer.convert_ids_to_tokens(tokenized_sentence)
-        sentence = " ".join(sentence)
-        words = sentence.split()
+        cls_token = tokenizer.cls_token
+        sep_token = tokenizer.sep_token
+        words = [cls_token] + sentence.split() + [sep_token]
     elif type_tokens == "WithCLS":
         tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
-        tokenized_sentence = tokenizer.encode(sentence)
-        sentence = tokenizer.convert_ids_to_tokens(tokenized_sentence)
-        sentence = " ".join(sentence[:-1])
-        words = sentence.split()
+        cls_token = tokenizer.cls_token
+        sep_token = tokenizer.sep_token
+        words = [cls_token] + sentence.split()
     else:
         raise ImportError("No such tokenization")
 
@@ -58,7 +47,7 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
             avg_embedding = np.mean(embeddings, axis=0)
             sentence_embeddings.append(avg_embedding)
         else:
-            print(f"Word '{word}' not found in vocabulary.")
+            # print(f"Word '{word}' not found in vocabulary.")
             continue
 
     if sentence_embeddings:
@@ -70,6 +59,8 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
 def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type="Average"):
     lang_type = "multilingual" if lang_type else "monolingual"
     layer_embeddings = []
+
+    print('##################################################')
 
     if type=="Average":
         for layer in range(int(num_layers)):
@@ -104,45 +95,13 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
             similarity = cosine_similarity(sentence_embedding.reshape(1, -1), marker_embedding.reshape(1, -1))[0][0]
             similarities[marker] = similarity
         else:
-            print(f"Marker '{marker}' could not be embedded.")
+            # print(f"Marker '{marker}' could not be embedded.")
             continue
 
     # Select the marker with the highest similarity score
     best_marker = max(similarities, key=similarities.get)
 
     return best_marker
-
-def get_file_names(path, sufix):
-    files = [f for f in os.listdir(str(path)) if f.endswith(str(sufix))]
-    return files
-
-def read_tsv_files(path, columns=3):
-    # Read a tsv file based on a number of columns with the last one being the gold label
-    tsv_files = get_file_names(str(path), '.tsv')
-
-    sentence_pairs = []
-    unique_target_variables = set()
-
-    for file_name in tsv_files:
-        file_path = os.path.join(str(path), file_name)
-        with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                parts = line.strip().split("\t")  # Split by slash
-                if len(parts) == int(columns):
-                    sentence1 = parts[0].strip()
-                    sentence1 = normalize(sentence1)
-                    
-                    sentence2 = parts[1].strip()
-                    sentence2 = normalize(sentence2)
-
-                    target_variable = parts[2].strip()
-                    
-                    sentence_pairs.append((sentence1, sentence2, target_variable))
-                    unique_target_variables.add(target_variable)
-                else:
-                    raise ImportError("Number of columns and data are not the same")
-                
-    return sentence_pairs, unique_target_variables
 
 def dissent_task(path, vocab2id):
     sentence_pairs, unique_target_variables = read_tsv_files(str(path))
@@ -178,24 +137,53 @@ def dissent_task(path, vocab2id):
 
     return total_predictions, correct_predictions, not_embedded_sentences, accuracy
 
-def save_multiclassifier_as_csv(filepath, exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy):
-    df = pd.DataFrame({
-    'total_predictions': [total_predictions],
-    'correct_predictions': [correct_predictions],
-    'not_embedded_sentences': [not_embedded_sentences],
-    'accuracy': [accuracy]
-    }, index=[exp_data])
+def probing(path, exp_data):
+    df = read_csv(str(path))
 
-    df.index.name='experiment'
+    correct_predictions = 0
+    total_predictions = 0
+    not_embedded_sentences = 0
 
-    os.makedirs(c.RESULTS, exist_ok=True)
-    
-    if os.path.isfile(filepath):
-        df.to_csv(filepath, sep=';', header=False, mode="a")
-    else:
-        df.to_csv(filepath, sep=';', header=True, mode="w")
+    sentence_pairs = df[['Before', 'After']].values
+    actual_markers = df['PM'].values
+    unique_target_variables = df['PM'].unique()  # Unique discourse markers            
 
-    return None
+    predictions = []
+
+    for x in range(0, len(sentence_pairs)):
+        s1_embedding = get_sentence_embedding(str(sentence_pairs[x,0]), layer_embeddings, vocab2id, args.type_of_tokenization)
+        s2_embedding = get_sentence_embedding(str(sentence_pairs[x,1]), layer_embeddings, vocab2id, args.type_of_tokenization)
+        
+        if s1_embedding is not None and s2_embedding is not None:
+            combined_embedding = np.mean(np.vstack([s1_embedding, s2_embedding]), axis=0)
+        else:
+            print(f"Embedding for Sentence Pair {x} could not be computed.")
+            not_embedded_sentences += 1
+            continue
+
+        best_marker = find_best_disco_marker(combined_embedding, unique_target_variables, layer_embeddings, vocab2id)
+        predictions.append(str(best_marker))
+        sentence = " [MASK] ".join(list(sentence_pairs[x]))
+        print(f"Sentence: {sentence}")
+        print(f"Best marker: {best_marker}")
+
+        if best_marker == actual_markers[x]:
+            correct_predictions += 1
+        
+        total_predictions += 1        
+
+    zero_one_loss = total_predictions - correct_predictions 
+    accuracy = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0  # Accuracy calculation
+
+    df[exp_data] = predictions
+    save_predictions(os.path.join(str(c.RESULTS), 'predictions.csv'), df, exp_data)
+
+    print('##################################################')
+
+    print(f"Total Predictions: {total_predictions}, Correct Predictions: {correct_predictions}, Accuracy: {accuracy:.2f}%")
+    print(f"Zero-One Loss: {zero_one_loss}, Not embedded sentences: {not_embedded_sentences}")
+
+    return total_predictions, correct_predictions, not_embedded_sentences, accuracy
 
 # Main function
 if __name__ == "__main__":
@@ -225,14 +213,6 @@ if __name__ == "__main__":
 
     vocab, vocab2id = load_vocab(encoder, args.use_multiling_enc, args.language)
 
-    print("Available vocabulary: ", vocab)
+    total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing("./data/frazer_categorization", exp_data)
 
-    # First task: Dissent
-    total_predictions, correct_predictions, not_embedded_sentences, accuracy = dissent_task("./data/dissent", vocab2id)
-    save_multiclassifier_as_csv(f"{c.RESULTS}dissent_tasks.csv", exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)
-    
-        
-#TODO:
-#3) Look for another test
-#3) Create Control tasks
-#4) Bash scripts
+    save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)

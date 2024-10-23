@@ -24,4 +24,5 @@ AOC_ISO_DIR = "./iso-aoc"
 
 # place where corpora are placed
 AOC_DOC_DIR = "./corpora/"
-RESULTS = "./results/"
+RESULTS = "./results"
+FASTTEXT_MODEL_PATH = './data/fasttext/wiki-news-300d-1M.vec'  # Change to your FastText model path
