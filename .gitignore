@@ -2,6 +2,8 @@ corpora/
 vocab/
 aoc/
 logs/
+iso/
+iso-aoc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

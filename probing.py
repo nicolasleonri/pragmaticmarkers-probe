@@ -56,26 +56,26 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
         return None 
 
 # Load embeddings from saved npy-documents
-def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type="Average"):
+def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type_layers="Average"):
     lang_type = "multilingual" if lang_type else "monolingual"
     layer_embeddings = []
 
     print('##################################################')
 
-    if type=="Average":
+    if type_layers=="Average":
         for layer in range(int(num_layers)):
             emb_file_path = f"{encoder}/{lang_type}/{lang}/{lang}_{layer}.npy"
             print("Embedding from", emb_file_path)
             layer_embeddings.append(np.load(emb_file_path))
-    elif type=="First":
+    elif type_layers=="First":
         emb_file_path = f"{encoder}/{lang_type}/{lang}/aggr_first_k/{lang}_aggr_{num_layers}.npy"
         print("Embedding from", emb_file_path)
         layer_embeddings.append(np.load(emb_file_path))
-    elif type=="Last":
+    elif type_layers=="Last":
         emb_file_path = f"{encoder}/{lang_type}/{lang}/aggr_last_k/{lang}_aggr_{num_layers}.npy"
         print("Embedding from", emb_file_path)
         layer_embeddings.append(np.load(emb_file_path))
-    elif type=="Unique":
+    elif type_layers=="Unique":
         emb_file_path = f"{encoder}/{lang_type}/{lang}/{lang}_{num_layers}.npy"
         print("Embedding from", emb_file_path)
         layer_embeddings.append(np.load(emb_file_path))
@@ -95,7 +95,7 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
             similarity = cosine_similarity(sentence_embedding.reshape(1, -1), marker_embedding.reshape(1, -1))[0][0]
             similarities[marker] = similarity
         else:
-            # print(f"Marker '{marker}' could not be embedded.")
+            print(f"Marker '{marker}' could not be embedded.")
             continue
 
     # Select the marker with the highest similarity score
@@ -159,6 +159,7 @@ def probing(path, exp_data):
         else:
             print(f"Embedding for Sentence Pair {x} could not be computed.")
             not_embedded_sentences += 1
+            predictions.append("NA")
             continue
 
         best_marker = find_best_disco_marker(combined_embedding, unique_target_variables, layer_embeddings, vocab2id)

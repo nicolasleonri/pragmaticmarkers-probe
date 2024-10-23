@@ -3,7 +3,7 @@ import os
 import constants as c
 
 for first in [False, True]:
-  for lang_type in ["monolingual"]: #"multilingual", 
+  for lang_type in ["monolingual", "multilingual"]: #"multilingual", 
     for lang in ["en", ]: # "de", "it", "fi", "ru"
 
       path = f"{c.AOC_DIR}/{lang_type}/{lang}/"
