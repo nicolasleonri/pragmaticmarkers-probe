@@ -1,6 +1,6 @@
 lang2model = {
   'en': 'bert-base-uncased',
-  # 'de': 'dbmdz/bert-base-german-uncased',
+  'en2': 'bert-large-uncased',
   # 'fi': 'TurkuNLP/bert-base-finnish-uncased-v1',
   # 'ru': 'DeepPavlov/rubert-base-cased',
   # 'tr': 'dbmdz/bert-base-turkish-uncased',
@@ -11,7 +11,7 @@ lang2model = {
 vocab_basedir = "./vocab/"
 lang2vocab = {
   'en': vocab_basedir + "wiki.en.100k.vocab",
-  # 'de': vocab_basedir + "wiki.de.100k.vocab",
+  'en2': vocab_basedir + "wiki.en.100k.vocab",
   # 'fi': vocab_basedir + "wiki.fi.100k.vocab",
   # 'ru': vocab_basedir + "wiki.ru.100k.vocab",
   # 'tr': vocab_basedir + "wiki.tr.100k.vocab"
@@ -25,4 +25,3 @@ AOC_ISO_DIR = "./iso-aoc"
 # place where corpora are placed
 AOC_DOC_DIR = "./corpora/"
 RESULTS = "./results"
-FASTTEXT_MODEL_PATH = './data/fasttext/wiki-news-300d-1M.vec'  # Change to your FastText model path

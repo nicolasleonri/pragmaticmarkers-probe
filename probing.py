@@ -47,7 +47,7 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
             avg_embedding = np.mean(embeddings, axis=0)
             sentence_embeddings.append(avg_embedding)
         else:
-            # print(f"Word '{word}' not found in vocabulary.")
+            print(f"Word '{word}' not found in vocabulary.")
             continue
 
     if sentence_embeddings:
@@ -103,41 +103,7 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
 
     return best_marker
 
-def dissent_task(path, vocab2id):
-    sentence_pairs, unique_target_variables = read_tsv_files(str(path))
-
-    correct_predictions = 0
-    total_predictions = 0
-    not_embedded_sentences = 0
-
-    for idx, (s1, s2, actual_marker) in enumerate(sentence_pairs):
-        s1_embedding = get_sentence_embedding(s1, layer_embeddings, vocab2id, args.type_of_tokenization)
-        s2_embedding = get_sentence_embedding(s2, layer_embeddings, vocab2id, args.type_of_tokenization)
-
-        if s1_embedding is not None and s2_embedding is not None:
-            combined_embedding = np.mean(np.vstack([s1_embedding, s2_embedding]), axis=0)
-
-        best_marker = find_best_disco_marker(combined_embedding, unique_target_variables, layer_embeddings, vocab2id)
-
-        print(f"Sentence Pair Index {idx}: Best Marker - {best_marker}")
-
-        if best_marker == actual_marker:
-            correct_predictions += 1
-        
-        total_predictions += 1
-    else:
-        print(f"Embedding for Sentence Pair {idx} could not be computed.")
-        not_embedded_sentences += 1
-
-    zero_one_loss = total_predictions - correct_predictions 
-    accuracy = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0  # Accuracy calculation
-
-    print(f"Total Predictions: {total_predictions}, Correct Predictions: {correct_predictions}, Accuracy: {accuracy:.2f}%")
-    print(f"Zero-One Loss: {zero_one_loss}, Not embedded sentences: {not_embedded_sentences}")
-
-    return total_predictions, correct_predictions, not_embedded_sentences, accuracy
-
-def probing(path, exp_data):
+def probing(path, exp_data, csv_filename):
     df = read_csv(str(path))
 
     correct_predictions = 0
@@ -177,7 +143,7 @@ def probing(path, exp_data):
     accuracy = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0  # Accuracy calculation
 
     df[exp_data] = predictions
-    save_predictions(os.path.join(str(c.RESULTS), 'predictions.csv'), df, exp_data)
+    save_predictions(os.path.join(str(c.RESULTS), str(csv_filename)), df, exp_data)
 
     print('##################################################')
 
@@ -214,6 +180,10 @@ if __name__ == "__main__":
 
     vocab, vocab2id = load_vocab(encoder, args.use_multiling_enc, args.language)
 
-    total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing("./data/frazer_categorization", exp_data)
+    total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing("./data/frazer_categorization", exp_data, "frazer_predictions.csv")
 
-    save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)
+    save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'frazer_results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)
+
+    total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing("./data/discourse_connective", exp_data, "discourse_connective_predictions.csv")
+
+    save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'discourse_connective_results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)

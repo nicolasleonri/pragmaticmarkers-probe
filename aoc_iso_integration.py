@@ -10,7 +10,7 @@ combined_dir = c.AOC_ISO_DIR
 os.makedirs(combined_dir, exist_ok=True)
 
 for encoder in ["monolingual", "multilingual"]:
-  for lang in ["en", ]: # "de", "fi", "ru", "tr"
+  for lang in ["en", "en2"]: # "de", "fi", "ru", "tr"
     iso_vocab_file = iso_dir + "/" + encoder + "/" + lang + "/" + lang + ".vocab"
     aoc_vocab_file = aoc_dir + "/" + encoder + "/" + lang + "/" + lang + ".vocab"
     combined_vocab_path = combined_dir + "/" + encoder + "/" + lang + "/"

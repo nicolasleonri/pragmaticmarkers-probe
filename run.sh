@@ -1,17 +1,21 @@
 #!/bin/bash
 
+directory="$PWD"/"$( basename "/logs" )"
+if [ ! -d $directory ]; then
+echo "Directory doesn't exist ("$directory")"
+mkdir -p $directory
+fi
+
 source "/data/pragmaticmarkers-probe/venv/bin/activate"
 
-#python3 -u aoc.py -lang en -gpu 0 -cs 50 -multiling True > logs/aoc_en_multi.out
-#python3 -u aoc.py -lang en -gpu 0 -cs 50 -multiling False > logs/aoc_en_mono.out
+python3 -u aoc.py -lang en2 -gpu 0 -cs 50 -multiling False > logs/aoc_en2_mono.out
 
-#python3 -u iso.py -lang en -gpu 0 -multiling True > logs/iso_en_multi.out
-#python3 -u iso.py -lang en -gpu 0 -multiling False > logs/iso_en_mono.out
+python3 -u iso.py -lang en2 -gpu 0 -multiling False > logs/iso_en2_mono.out
 
-#python3 -u aoc_iso_integration.py > logs/aoc_iso_integration.out
-#python3 -u layer_aggregation.py > logs/layer_integration.out
+python3 -u aoc_iso_integration.py > logs/aoc_iso_integration.out
+python3 -u layer_aggregation.py > logs/layer_integration.out
 
-languages=("en")
+languages=("en" "en2")
 use_multiling_enc=("True" "False")
 context_encoders=("AOC" "ISO")
 tokenizations=("NoSpec" "All" "WithCLS")
@@ -22,6 +26,9 @@ index_of_layers_short=("0" "1" "2" "3" "4" "5")  # For "First" and "Last" layers
 # Loop through all possible combinations of arguments
 for lang in "${languages[@]}"; do
   for multiling in "${use_multiling_enc[@]}"; do
+    if [[ "$lang" == "en2" && "$multiling" == "True" ]]; then
+    continue
+    fi
     for encoder in "${context_encoders[@]}"; do
       for tokenization in "${tokenizations[@]}"; do
         for layer in "${type_of_layers[@]}"; do
@@ -35,14 +42,14 @@ for lang in "${languages[@]}"; do
 
           for ilayer in "${index_of_layers[@]}"; do
             
-            # Run the Python script with the current set of arguments
-            python3 probing.py \
-              -lang "$lang" \
-              -multiling "$multiling" \
-              -encoder "$encoder" \
-              -tokenization "$tokenization" \
-              -tlayer "$layer" \
-              -ilayer "$ilayer"
+            # # Run the Python script with the current set of arguments
+            # python3 probing.py \
+            #   -lang "$lang" \
+            #   -multiling "$multiling" \
+            #   -encoder "$encoder" \
+            #   -tokenization "$tokenization" \
+            #   -tlayer "$layer" \
+            #   -ilayer "$ilayer"
 
             echo "Ran with lang=$lang, multiling=$multiling, encoder=$encoder, tokenization=$tokenization, tlayer=$layer, ilayer=$ilayer" >> logs/experiment_log.out
 
