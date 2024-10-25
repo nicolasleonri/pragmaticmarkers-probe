@@ -47,7 +47,7 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
             avg_embedding = np.mean(embeddings, axis=0)
             sentence_embeddings.append(avg_embedding)
         else:
-            print(f"Word '{word}' not found in vocabulary.")
+            # print(f"Word '{word}' not found in vocabulary.")
             continue
 
     if sentence_embeddings:
@@ -60,7 +60,7 @@ def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type_layers="
     lang_type = "multilingual" if lang_type else "monolingual"
     layer_embeddings = []
 
-    print('##################################################')
+    print('######################EMBEDDING######################')
 
     if type_layers=="Average":
         for layer in range(int(num_layers)):
@@ -116,6 +116,8 @@ def probing(path, exp_data, csv_filename):
 
     predictions = []
 
+    print('######################PROBING######################')
+
     for x in range(0, len(sentence_pairs)):
         s1_embedding = get_sentence_embedding(str(sentence_pairs[x,0]), layer_embeddings, vocab2id, args.type_of_tokenization)
         s2_embedding = get_sentence_embedding(str(sentence_pairs[x,1]), layer_embeddings, vocab2id, args.type_of_tokenization)
@@ -145,7 +147,7 @@ def probing(path, exp_data, csv_filename):
     df[exp_data] = predictions
     save_predictions(os.path.join(str(c.RESULTS), str(csv_filename)), df, exp_data)
 
-    print('##################################################')
+    print('######################RESULTS######################')
 
     print(f"Total Predictions: {total_predictions}, Correct Predictions: {correct_predictions}, Accuracy: {accuracy:.2f}%")
     print(f"Zero-One Loss: {zero_one_loss}, Not embedded sentences: {not_embedded_sentences}")
@@ -168,15 +170,16 @@ if __name__ == "__main__":
     else:
         lang_type = "mono"
 
-    if args.type_of_layer and args.index_of_layer:
-        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer, args.type_of_layer, )
-        exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/{args.index_of_layer}/{args.type_of_layer}"
-    elif args.index_of_layer:
-        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer)
-        exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/{args.index_of_layer}"
-    else:
-        layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language)
-        exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/Total"
+    # if args.type_of_layer and args.index_of_layer:
+    layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer, args.type_of_layer, )
+    exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/{args.index_of_layer}/{args.type_of_layer}"
+    
+    # elif args.index_of_layer:
+    #     layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer)
+    #     exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/{args.index_of_layer}"
+    # else:
+    #     layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language)
+    #     exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/Total"
 
     vocab, vocab2id = load_vocab(encoder, args.use_multiling_enc, args.language)
 

@@ -84,7 +84,6 @@ if __name__ == "__main__":
   device = setup_environment(args)
 
   basedir = prepare_output_directory(args.use_multiling_enc, args.language)
-  print(basedir)
   
   tokenizer, model, model_name = load_model_and_tokenizer(args.language, args.use_multiling_enc)
   model.to(device, non_blocking=True)
@@ -93,7 +92,11 @@ if __name__ == "__main__":
 
   vocabulary = load_vocabulary(args.language)
 
-  layer2embs, vocab_entries = extract_embeddings(vocabulary, model, tokenizer, device)
+  if args.language == "en2":
+    # Bert large has more layers
+    layer2embs, vocab_entries = extract_embeddings(vocabulary, model, tokenizer, device, 25)
+  else:
+    layer2embs, vocab_entries = extract_embeddings(vocabulary, model, tokenizer, device)
 
   print("Saving embeddings")
   save_embeddings_and_vocab(layer2embs, vocab_entries, basedir, args.language)

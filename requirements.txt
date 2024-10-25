@@ -2,7 +2,6 @@ certifi==2024.8.30
 charset-normalizer==3.4.0
 cysignals==1.11.4
 Cython==3.0.11
-fasttext==0.9.3
 filelock==3.16.1
 fsspec==2024.9.0
 huggingface-hub==0.26.0
@@ -36,6 +35,7 @@ requests==2.32.3
 safetensors==0.4.5
 scikit-learn==1.5.2
 scipy==1.13.1
+setuptools==75.2.0
 six==1.16.0
 smart-open==7.0.5
 sympy==1.13.1

@@ -11,6 +11,9 @@ os.makedirs(combined_dir, exist_ok=True)
 
 for encoder in ["monolingual", "multilingual"]:
   for lang in ["en", "en2"]: # "de", "fi", "ru", "tr"
+    if lang == "en2" and encoder == "multilingual":
+      # Handles case
+      continue
     iso_vocab_file = iso_dir + "/" + encoder + "/" + lang + "/" + lang + ".vocab"
     aoc_vocab_file = aoc_dir + "/" + encoder + "/" + lang + "/" + lang + ".vocab"
     combined_vocab_path = combined_dir + "/" + encoder + "/" + lang + "/"
@@ -24,7 +27,10 @@ for encoder in ["monolingual", "multilingual"]:
 
     aoc_layer_embs = []
     iso_layer_embs = []
-    num_layers = 13
+    if lang == "en2":
+        num_layers = 24
+      else:
+        num_layers = 13
     for layer in range(num_layers):
       aoc_layer_emb_file = aoc_dir + "/%s/%s/%s_%s.npy" % (encoder, lang, lang, str(layer))
       iso_layer_emb_file = iso_dir + "/%s/%s/%s_%s.npy" % (encoder, lang, lang, str(layer))
