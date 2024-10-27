@@ -95,10 +95,11 @@ if __name__ == "__main__":
   if args.language == "en2":
     # Bert large has more layers
     layer2embs, vocab_entries = extract_embeddings(vocabulary, model, tokenizer, device, 25)
+    print("Saving embeddings")
+    save_embeddings_and_vocab(layer2embs, vocab_entries, basedir, args.language, 25)
   else:
     layer2embs, vocab_entries = extract_embeddings(vocabulary, model, tokenizer, device)
-
-  print("Saving embeddings")
-  save_embeddings_and_vocab(layer2embs, vocab_entries, basedir, args.language)
-
+    print("Saving embeddings")
+    save_embeddings_and_vocab(layer2embs, vocab_entries, basedir, args.language)
+  
   print("DONE!")

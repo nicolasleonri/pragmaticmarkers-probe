@@ -7,6 +7,7 @@ import argparse
 from util.argparse import str2bool
 from util.preprocessing import * 
 from util.probing import *
+import multiprocessing as mp
 
 # Argument parsing
 def parse_arguments():
@@ -173,7 +174,8 @@ if __name__ == "__main__":
     # if args.type_of_layer and args.index_of_layer:
     layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer, args.type_of_layer, )
     exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/{args.index_of_layer}/{args.type_of_layer}"
-    
+    pool = mp.Pool(mp.cpu_count())
+
     # elif args.index_of_layer:
     #     layer_embeddings = load_layer_embeddings(encoder, args.use_multiling_enc, args.language, args.index_of_layer)
     #     exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/{args.index_of_layer}"

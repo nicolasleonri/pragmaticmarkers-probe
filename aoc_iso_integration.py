@@ -28,9 +28,9 @@ for encoder in ["monolingual", "multilingual"]:
     aoc_layer_embs = []
     iso_layer_embs = []
     if lang == "en2":
-        num_layers = 24
-      else:
-        num_layers = 13
+      num_layers = 24
+    else:
+      num_layers = 13
     for layer in range(num_layers):
       aoc_layer_emb_file = aoc_dir + "/%s/%s/%s_%s.npy" % (encoder, lang, lang, str(layer))
       iso_layer_emb_file = iso_dir + "/%s/%s/%s_%s.npy" % (encoder, lang, lang, str(layer))

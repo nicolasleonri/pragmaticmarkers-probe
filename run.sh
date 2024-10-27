@@ -10,9 +10,9 @@ fi
 directory="$PWD"/"venv"/"bin"/"activate"
 source $directory
 
-python3 -u iso.py -lang en2 -gpu 0 -multiling False > logs/iso_en2_mono.out
-python3 -u aoc_iso_integration.py > logs/aoc_iso_integration.out
-python3 -u layer_aggregation.py > logs/layer_integration.out
+# python3 -u iso.py -lang en2 -gpu 0 -multiling False > logs/iso_en2_mono.out
+# python3 -u aoc_iso_integration.py > logs/aoc_iso_integration.out
+# python3 -u layer_aggregation.py > logs/layer_integration.out
 
 languages=("en" "en2")
 use_multiling_enc=("True" "False")
@@ -32,6 +32,9 @@ for lang in "${languages[@]}"; do
     fi
     for encoder in "${context_encoders[@]}"; do
       for tokenization in "${tokenizations[@]}"; do
+      if [[ "$lang" == "en" && "$tokenization" == "NoSpec" ]]; then
+      continue
+      fi
         for layer in "${type_of_layers[@]}"; do
         
           if [[ "$layer" == "First" || "$layer" == "Last" ]] && [[ "$lang" == "en2" ]]; then
