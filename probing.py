@@ -10,6 +10,8 @@ from util.probing import *
 import multiprocessing as mp
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+import time
+
 
 # Argument parsing
 def parse_arguments():
@@ -364,11 +366,20 @@ if __name__ == "__main__":
     #     exp_data = f"{args.context_encoder}/{args.language}/{lang_type}/{args.type_of_tokenization}/13/Total"
 
     vocab, vocab2id = load_vocab(encoder, args.use_multiling_enc, args.language)
+    
+    tic = time.time()
+    total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing_parallel("./data/frazer_categorization", exp_data, "frazer_predictions.csv")
+    toc = time.time()
+    needed =  toc - tic
+    print('######################TIME######################')
+    print(f"Time needed for Frazer Classification: {needed} seconds")
+    save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'frazer_results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)
 
-    # total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing_parallel("./data/frazer_categorization", exp_data, "frazer_predictions.csv")
-
-    # save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'frazer_results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)
-
+    tic = time.time()
     total_predictions, correct_predictions, not_embedded_sentences, accuracy = probing_parallel("./data/discourse_connective", exp_data, "discourse_connective_predictions.csv")
+    toc = time.time()
+    needed =  toc - tic
+    print('######################TIME######################')
+    print(f"Time needed for Discourse Connective Classification: {needed} seconds")
 
     save_multiclassifier_as_csv(os.path.join(str(c.RESULTS), 'discourse_connective_results.csv'), exp_data, total_predictions, correct_predictions, not_embedded_sentences, accuracy)

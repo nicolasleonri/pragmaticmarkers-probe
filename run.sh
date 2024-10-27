@@ -32,9 +32,6 @@ for lang in "${languages[@]}"; do
     fi
     for encoder in "${context_encoders[@]}"; do
       for tokenization in "${tokenizations[@]}"; do
-      if [[ "$lang" == "en" && "$tokenization" == "NoSpec" ]]; then
-      continue
-      fi
         for layer in "${type_of_layers[@]}"; do
         
           if [[ "$layer" == "First" || "$layer" == "Last" ]] && [[ "$lang" == "en2" ]]; then
