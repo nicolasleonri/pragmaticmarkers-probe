@@ -27,7 +27,7 @@ def parse_arguments():
 # Function to get embeddings for each word
 def get_word_embedding(word, layer_embeddings, vocab2id):
     if word in vocab2id:
-        token_id = vocab2id[word]  # Get the token id from the vocabulary
+        token_id = vocab2id[word] # Get the token id from the vocabulary
         embeddings = [layer[token_id] for layer in layer_embeddings]
         return np.mean(embeddings, axis=0)
     else:
@@ -222,7 +222,6 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
 
 def probing_parallel(path, exp_data, csv_filename):
     df = read_csv(str(path))
-
     tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
 
     correct_predictions = 0

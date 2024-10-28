@@ -7,6 +7,7 @@ import constants as c
 def load_vocab(encoder, lang_type, lang):
     lang_type = "multilingual" if lang_type else "monolingual"
     vocab_file_path = f"{encoder}/{lang_type}/{lang}/{lang}.vocab"
+    print(vocab_file_path)
     with open(vocab_file_path, 'r') as f:
         vocab = [line.strip() for line in f]  # Read and strip each line
     vocab2id = {term: i for i, term in enumerate(vocab)}  # Create mapping from term to index

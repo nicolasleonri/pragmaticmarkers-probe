@@ -9,7 +9,7 @@ for first in [False, True]:
         # Handles case
         continue
 
-      path = f"{c.AOC_DIR}/{lang_type}/{lang}/"
+      path = f"{c.ISO_DIR}/{lang_type}/{lang}/"
       all_layers = []
       
       if lang == "en2":
