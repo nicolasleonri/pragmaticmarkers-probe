@@ -34,7 +34,7 @@ def get_word_embedding(word, layer_embeddings, vocab2id):
         return None
     
 # Parallelized function to get the embedding for a sentence
-def get_sentence_embedding_parallel(sentence, layer_embeddings, vocab2id, type_tokens):
+def get_sentence_embedding_parallel(sentence, layer_embeddings, vocab2id, type_tokens, tokenizer):
     sentence_embeddings = []
 
     sentence = normalize(sentence)
@@ -43,12 +43,10 @@ def get_sentence_embedding_parallel(sentence, layer_embeddings, vocab2id, type_t
     if type_tokens == "NoSpec":
         words = sentence.split()
     elif type_tokens == "All":
-        tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
         cls_token = tokenizer.cls_token
         sep_token = tokenizer.sep_token
         words = [cls_token] + sentence.split() + [sep_token]
     elif type_tokens == "WithCLS":
-        tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
         cls_token = tokenizer.cls_token
         words = [cls_token] + sentence.split()
     else:
@@ -71,7 +69,7 @@ def get_sentence_embedding_parallel(sentence, layer_embeddings, vocab2id, type_t
         return None
 
 # Function to get the embedding for a sentence
-def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
+def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens, tokenizer):
     sentence_embeddings = []
 
     sentence = normalize(sentence)
@@ -79,12 +77,10 @@ def get_sentence_embedding(sentence, layer_embeddings, vocab2id, type_tokens):
     if type_tokens == "NoSpec":
         words = sentence.split()
     elif type_tokens == "All":
-        tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
         cls_token = tokenizer.cls_token
         sep_token = tokenizer.sep_token
         words = [cls_token] + sentence.split() + [sep_token]
     elif type_tokens == "WithCLS":
-        tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
         cls_token = tokenizer.cls_token
         sep_token = tokenizer.sep_token
         words = [cls_token] + sentence.split()
@@ -173,8 +169,8 @@ def load_layer_embeddings(encoder, lang_type, lang, num_layers=13, type_layers="
     return layer_embeddings
 
 # Helper function to calculate similarity for a single marker
-def calculate_marker_similarity(marker, sentence_embedding, layer_embeddings, vocab2id, type_of_tokenization):
-    marker_embedding = get_sentence_embedding(marker, layer_embeddings, vocab2id, type_of_tokenization)
+def calculate_marker_similarity(marker, sentence_embedding, layer_embeddings, vocab2id, type_of_tokenization, tokenizer):
+    marker_embedding = get_sentence_embedding(marker, layer_embeddings, vocab2id, type_of_tokenization, tokenizer)
     if marker_embedding is not None:
         similarity = cosine_similarity(sentence_embedding.reshape(1, -1), marker_embedding.reshape(1, -1))[0][0]
         return marker, similarity
@@ -183,13 +179,13 @@ def calculate_marker_similarity(marker, sentence_embedding, layer_embeddings, vo
         return marker, None
     
 # Parallelized function to find the most appropriate discourse marker
-def find_best_disco_marker_parallel(sentence_embedding, markers, layer_embeddings, vocab2id, type_of_tokenization):
+def find_best_disco_marker_parallel(sentence_embedding, markers, layer_embeddings, vocab2id, type_of_tokenization, tokenizer):
     similarities = {}
 
     # Use ThreadPoolExecutor to process each marker in parallel
     with ThreadPoolExecutor() as executor:
         futures = {
-            executor.submit(calculate_marker_similarity, marker, sentence_embedding, layer_embeddings, vocab2id, type_of_tokenization): marker
+            executor.submit(calculate_marker_similarity, marker, sentence_embedding, layer_embeddings, vocab2id, type_of_tokenization, tokenizer): marker
             for marker in markers
         }
 
@@ -227,6 +223,8 @@ def find_best_disco_marker(sentence_embedding, markers, layer_embeddings, vocab2
 def probing_parallel(path, exp_data, csv_filename):
     df = read_csv(str(path))
 
+    tokenizer = BertTokenizer.from_pretrained(lang2model[args.language])
+
     correct_predictions = 0
     total_predictions = 0
     not_embedded_sentences = 0
@@ -241,12 +239,12 @@ def probing_parallel(path, exp_data, csv_filename):
 
     # Helper function to process each sentence pair
     def process_sentence_pair(x):
-        s1_embedding = get_sentence_embedding_parallel(str(sentence_pairs[x, 0]), layer_embeddings, vocab2id, args.type_of_tokenization)
-        s2_embedding = get_sentence_embedding_parallel(str(sentence_pairs[x, 1]), layer_embeddings, vocab2id, args.type_of_tokenization)
+        s1_embedding = get_sentence_embedding_parallel(str(sentence_pairs[x, 0]), layer_embeddings, vocab2id, args.type_of_tokenization, tokenizer)
+        s2_embedding = get_sentence_embedding_parallel(str(sentence_pairs[x, 1]), layer_embeddings, vocab2id, args.type_of_tokenization, tokenizer)
         print(f"Embedding for Sentence Pair {x} computed.")
         if s1_embedding is not None and s2_embedding is not None:
             combined_embedding = np.mean(np.vstack([s1_embedding, s2_embedding]), axis=0)
-            best_marker = find_best_disco_marker_parallel(combined_embedding, unique_target_variables, layer_embeddings, vocab2id, args.type_of_tokenization)
+            best_marker = find_best_disco_marker_parallel(combined_embedding, unique_target_variables, layer_embeddings, vocab2id, args.type_of_tokenization, tokenizer)
             print(f"Best marker for Sentence Pair {x} computed.")
             if best_marker == actual_markers[x]:
                 return best_marker, True
