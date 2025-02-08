@@ -67,6 +67,9 @@ df_fr$layer <- as.numeric(df_fr$layer)
 df_fr <- df_fr %>% arrange(source, context, tokenization, aggregation, layer)
 print(xtable(df_fr), include.rownames=FALSE)
 
+# General results
+df_gr <- df_total %>%  group_by(source) %>%  summarize(mean_accuracy = mean(accuracy, na.rm = FALSE)) %>% arrange(-mean_accuracy)
+print(xtable(df_gr), include.rownames=FALSE)
 
 # By aggregation
 df_aggregation <- df_total %>%  group_by(source, aggregation) %>%  summarize(mean_accuracy = mean(accuracy, na.rm = FALSE)) %>% arrange(source, -mean_accuracy)
